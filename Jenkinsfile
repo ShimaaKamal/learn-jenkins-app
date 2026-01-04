@@ -49,11 +49,6 @@ pipeline {
                             npm test
                         '''
                     }
-                    post {
-                        always {
-                            junit 'jest-results/junit.xml'
-                        }
-                    }
                 }
 
                 stage('E2E') {
@@ -71,42 +66,6 @@ pipeline {
                             npx playwright test  --reporter=html
                         '''
                     }
-
-                    post {
-                        always {
-                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Local E2E', reportTitles: '', useWrapperFileDirectly: true])
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Deploy staging') {
-            agent {
-                docker {
-                    image 'my-playwright'
-                    reuseNode true
-                }
-            }
-
-            environment {
-                CI_ENVIRONMENT_URL = 'STAGING_URL_TO_BE_SET'
-            }
-
-            steps {
-                sh '''
-                    netlify --version
-                    echo "Deploying to staging. Site ID: $NETLIFY_SITE_ID"
-                    netlify status
-                    netlify deploy --dir=build --json > deploy-output.json
-                    CI_ENVIRONMENT_URL=$(node-jq -r '.deploy_url' deploy-output.json)
-                    npx playwright test  --reporter=html
-                '''
-            }
-
-            post {
-                always {
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Staging E2E', reportTitles: '', useWrapperFileDirectly: true])
                 }
             }
         }
@@ -119,26 +78,12 @@ pipeline {
                 }
             }
 
-            environment {
-                CI_ENVIRONMENT_URL = 'YOUR NETLIFY SITE URL'
-            }
-
             steps {
                 sh '''
                     node --version
-                    netlify --version
-                    echo "Deploying to production. Site ID: $NETLIFY_SITE_ID"
-                    netlify status
-                    netlify deploy --dir=build --prod
-                    npx playwright test  --reporter=html
                 '''
             }
 
-            post {
-                always {
-                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'playwright-report', reportFiles: 'index.html', reportName: 'Prod E2E', reportTitles: '', useWrapperFileDirectly: true])
-                }
-            }
         }
     }
 }
